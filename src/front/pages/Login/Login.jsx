@@ -1,5 +1,5 @@
 import React from "react";
-import { FormularioLogin } from "../../components/FormularioLogin/FormularioLogin";
+import { FormularioLogin } from "../../components/FormLogin/FormLogin";
 
 import "./Login.css";
 import logo from "../../assets/images/flow-logo.svg";

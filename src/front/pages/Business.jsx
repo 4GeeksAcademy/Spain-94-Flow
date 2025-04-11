@@ -1,5 +1,5 @@
 import React from "react";
-import { SelectBusiness } from "../components/SeleccionarNegocio/SelectBusiness";
+import { SelectBusiness } from "../components/SelectBusiness/SelectBusiness";
 
 export const Business = () => {
   return (

@@ -21,7 +21,7 @@ export const ClientesList = ({ search }) => {
 		},
 		{
 			id: 3,
-			nombre: "Carlos",
+			nombre: "Carlos",git 
 			apellido: "López",
 			cliente_dni: "45678912",
 			telefono: "555-9876",
