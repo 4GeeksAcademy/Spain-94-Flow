@@ -1,6 +1,6 @@
 /credentials/credentials.json
 /credentials/token.json
-
+/scripts/create_admin.__pycache__
 # ignore all files starting with .
 .*
 
