@@ -28,12 +28,12 @@
 
 .navbar-logo {
   height: 100px;
-  width: auto; 
+  width: auto;
   transition: transform 0.3s ease;
 }
 
 .navbar-logo:hover {
-  transform: scale(1.05); 
+  transform: scale(1.05);
 }
 
 .logo-container {
@@ -323,7 +323,8 @@
 
 .sub-navigation-container .nav-button {
   transform: translateY(-20px);
-  transition: transform 0.5s ease-out, background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+  transition: transform 0.5s ease-out, background-color 0.3s ease,
+    box-shadow 0.3s ease, color 0.3s ease;
   opacity: 0;
 }
 
@@ -447,12 +448,132 @@
 }
 
 /* Responsive adjustments */
+@media (max-width: 1200px) {
+  .sub-navigation .container .row {
+    justify-content: center;
+  }
+
+  .nav-button {
+    margin: 5px;
+  }
+}
+
+@media (max-width: 992px) and (min-width: 769px) {
+  .nav-button {
+    width: 220px;
+    height: 65px;
+  }
+
+  .sub-navbar {
+    padding: 0 1rem;
+  }
+
+  .search-container {
+    width: 200px;
+  }
+}
+
 @media (max-width: 768px) {
+  .top-navbar {
+    height: auto;
+    padding: 0.5rem 1rem;
+    flex-direction: column;
+  }
+
+  .navbar-logo {
+    height: 70px;
+  }
+
+  .navbar-controls {
+    margin-top: 0.5rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nav-button {
+    width: 100%;
+    height: 60px;
+    padding: 8px 5px;
+  }
+
   .nav-button i {
     font-size: 1.25rem;
   }
 
   .nav-button span {
     font-size: 0.75rem;
+  }
+
+  .sub-navigation-container.visible {
+    max-height: 300px; /* Aumentar para acomodar cambios de layout */
+  }
+
+  .search-container {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .dropdown-menu {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    width: 100%;
+    margin-top: 0;
+    border-radius: 0;
+  }
+
+  .sub-navigation .container .row {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-navbar {
+    padding: 0.4rem 0.7rem;
+  }
+
+  .navbar-logo {
+    height: 60px;
+  }
+
+  .btn-report,
+  .btn-user {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.9rem;
+  }
+
+  .sub-navbar {
+    height: auto;
+    padding: 0.5rem;
+    flex-direction: column;
+  }
+
+  .nav-sections {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .nav-item {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.9rem;
+  }
+
+  .search-container {
+    width: 100%;
+  }
+
+  .sub-navigation .container .row {
+    flex-direction: column;
+  }
+
+  .nav-button {
+    margin-bottom: 0.5rem;
+    width: 100%;
+    max-width: 280px;
   }
 }

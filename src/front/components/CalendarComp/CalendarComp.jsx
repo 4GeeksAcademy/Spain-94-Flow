@@ -4,7 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import { Link } from "react-router-dom";
+
 import "./CalendarComp.css"
 
 const EventTooltip = ({ position, eventData, onClose }) => {
@@ -25,40 +25,131 @@ const EventTooltip = ({ position, eventData, onClose }) => {
 
     if (!eventData) return null;
 
+    const formatDateTime = (date) => {
+        if (!date) return "No disponible";
+        const options = { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit'
+        };
+        return new Date(date).toLocaleString(undefined, options);
+    };
+
+    const extractDetailsFields = () => {
+        if (!eventData.description) return {};
+        
+        const fields = {};
+        const lines = eventData.description.split('\n');
+        
+        lines.forEach(line => {
+            if (line.trim() === '') return;
+            
+            const parts = line.split(':');
+            if (parts.length > 1) {
+                const key = parts[0].trim();
+                const value = parts.slice(1).join(':').trim();
+                fields[key.toLowerCase()] = { key, value };
+            }
+        });
+        
+        return fields;
+    };
+    
+    const detailsFields = extractDetailsFields();
+    
+    const status = detailsFields.status?.value.toLowerCase() || 'default';
+
     const style = {
         left: `${position.x}px`,
         top: `${position.y}px`,
     };
 
     return (
-        <div className="event-tooltip" style={style} ref={tooltipRef}>
+        <div className={`event-tooltip status-${status}`} style={style} ref={tooltipRef}>
             <div className="event-tooltip-header">
                 <h3>{eventData.title}</h3>
                 <button className="tooltip-close-button" onClick={onClose}>×</button>
             </div>
             <div className="event-tooltip-content">
-                <p><strong>Start:</strong> {new Date(eventData.start).toLocaleString()}</p>
-                <p><strong>End:</strong> {new Date(eventData.end).toLocaleString()}</p>
-                {eventData.location && <p><strong>Location:</strong> {eventData.location}</p>}
-                {eventData.description && (
-                    <div className="event-description-fields">
-                        <h4>Details:</h4>
-                        {eventData.description.split('\n').map((line, index) => {
-                            if (line.trim() === '') return null;
-
-                            const parts = line.split(':');
-                            if (parts.length > 1) {
-                                const key = parts[0].trim();
-                                const value = parts.slice(1).join(':').trim();
-                                return (
-                                    <p key={index} className="description-field">
-                                        <strong>{key}:</strong> {value}
-                                    </p>
-                                );
-                            } else {
-                                return <p key={index} className="description-field">{line}</p>;
-                            }
-                        })}
+                <div className="event-time-info">
+                    <div className="time-slot">
+                        <i className="fas fa-clock"></i>
+                        <span>{formatDateTime(eventData.start)}</span>
+                    </div>
+                    <div className="time-separator">-</div>
+                    <div className="time-slot">
+                        <span>{formatDateTime(eventData.end)}</span>
+                    </div>
+                </div>
+                
+                <div className="event-details-card">
+                    {detailsFields.client && (
+                        <div className="detail-item">
+                            <div className="detail-icon">
+                                <i className="fas fa-user"></i>
+                            </div>
+                            <div className="detail-content">
+                                <label>Client:</label>
+                                <span>{detailsFields.client.value}</span>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {detailsFields.email && (
+                        <div className="detail-item">
+                            <div className="detail-icon">
+                                <i className="fas fa-envelope"></i>
+                            </div>
+                            <div className="detail-content">
+                                <label>Email:</label>
+                                <span>{detailsFields.email.value}</span>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {detailsFields.service && (
+                        <div className="detail-item">
+                            <div className="detail-icon">
+                                <i className="fas fa-concierge-bell"></i>
+                            </div>
+                            <div className="detail-content">
+                                <label>Service:</label>
+                                <span>{detailsFields.service.value}</span>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {detailsFields['attended by'] && (
+                        <div className="detail-item">
+                            <div className="detail-icon">
+                                <i className="fas fa-user-md"></i>
+                            </div>
+                            <div className="detail-content">
+                                <label>Attended by:</label>
+                                <span>{detailsFields['attended by'].value}</span>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {detailsFields.status && (
+                        <div className={`detail-item status-item status-${status}`}>
+                            <div className="detail-icon">
+                                <i className="fas fa-info-circle"></i>
+                            </div>
+                            <div className="detail-content">
+                                <label>Status:</label>
+                                <span className="status-badge">{detailsFields.status.value}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                
+                {eventData.location && (
+                    <div className="event-location">
+                        <i className="fas fa-map-marker-alt"></i>
+                        <span>{eventData.location}</span>
                     </div>
                 )}
             </div>
@@ -77,7 +168,6 @@ export const CalendarComp = () => {
         token
     } = store;
 
-    // Tooltip state
     const [tooltipVisible, setTooltipVisible] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
@@ -103,19 +193,27 @@ export const CalendarComp = () => {
 
             const data = await response.json();
 
-            const formattedEvents = data.map(event => ({
-                id: event.id,
-                title: event.summary,
-                start: event.start.dateTime || event.start.date,
-                end: event.end.dateTime || event.end.date,
-                description: event.description,
-                location: event.location,
-                extendedProps: {
-                    googleEventId: event.id,
-                    htmlLink: event.htmlLink,
-                    businessId: event.extendedProperties?.private?.businessId || null
+            const formattedEvents = data.map(event => {
+                let title = event.summary;
+                if (title && title.startsWith("Appointment:")) {
+                    title = title.substring("Appointment:".length).trim();
                 }
-            }));
+
+                return {
+                    id: event.id,
+                    title: title,
+                    start: event.start.dateTime || event.start.date,
+                    end: event.end.dateTime || event.end.date,
+                    description: event.description,
+                    location: event.location,
+                    extendedProps: {
+                        googleEventId: event.id,
+                        htmlLink: event.htmlLink,
+                        businessId: event.extendedProperties?.private?.businessId || null,
+                        serviceType: event.extendedProperties?.private?.serviceType || 'default'
+                    }
+                };
+            });
 
             dispatch({
                 type: "load_calendar_events_success",
@@ -206,6 +304,31 @@ export const CalendarComp = () => {
         setTooltipVisible(false);
     };
 
+    const eventDidMount = (info) => {
+
+        const { event } = info;
+
+        let status = 'default';
+        if (event.extendedProps.description) {
+
+            const lines = event.extendedProps.description.split('\n');
+            for (const line of lines) {
+                if (line.toLowerCase().startsWith('status:')) {
+                    const statusValue = line.split(':')[1]?.trim().toLowerCase();
+                    if (statusValue) {
+                        status = statusValue;
+                    }
+                    break;
+                }
+            }
+        }
+
+        info.el.classList.add('modern-event');
+
+        info.el.classList.add(`status-${status}`);
+
+    };
+
     return (
         <div className="calendar-container">
             <div className="calendar-header">
@@ -254,6 +377,7 @@ export const CalendarComp = () => {
                     }}
                     events={calendarEvents}
                     eventClick={handleEventClick}
+                    eventDidMount={eventDidMount}
                     dateClick={handleDateClick}
                     editable={false}
                     selectable={true}

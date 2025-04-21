@@ -12,19 +12,20 @@ export const AppointmentsList = () => {
 
     const [appointments, setAppointments] = useState([]);
     const [clients, setClients] = useState([]);
+    const [businesses, setBusinesses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     const [filters, setFilters] = useState({
         clientId: "",
         date: "",
-        status: ""
+        status: "",
+        businessId: selectedBusiness ? selectedBusiness.id : ""
     });
 
     useEffect(() => {
-
-        if (!token || !selectedBusiness) {
-            setError("Login and business selection required");
+        if (!token) {
+            setError("Login required");
             setLoading(false);
             return;
         }
@@ -34,32 +35,57 @@ export const AppointmentsList = () => {
                 setLoading(true);
                 const apiBaseUrl = backendUrl.endsWith('/') ? backendUrl : `${backendUrl}/`;
 
-                const appointmentsResponse = await fetch(`${apiBaseUrl}api/appointments?business_id=${selectedBusiness.id}`, {
+                const businessesResponse = await fetch(`${apiBaseUrl}api/businesses`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
-                if (!appointmentsResponse.ok) {
-                    throw new Error(`Error loading appointments: ${appointmentsResponse.status}`);
+                if (!businessesResponse.ok) {
+                    throw new Error(`Error loading businesses: ${businessesResponse.status}`);
                 }
 
-                const appointmentsData = await appointmentsResponse.json();
-                setAppointments(appointmentsData);
+                const businessesData = await businessesResponse.json();
+                setBusinesses(businessesData);
 
-                // Cargar clientes
-                const clientsResponse = await fetch(`${apiBaseUrl}api/clients`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+                const businessToUse = filters.businessId || (selectedBusiness ? selectedBusiness.id :
+                    businessesData.length > 0 ? businessesData[0].id : null);
+
+                if (businessToUse) {
+
+                    if (!filters.businessId) {
+                        setFilters(prev => ({ ...prev, businessId: businessToUse }));
                     }
-                });
 
-                if (!clientsResponse.ok) {
-                    throw new Error(`Error loading clients: ${clientsResponse.status}`);
+                    const appointmentsResponse = await fetch(`${apiBaseUrl}api/appointments?business_id=${businessToUse}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!appointmentsResponse.ok) {
+                        throw new Error(`Error loading appointments: ${appointmentsResponse.status}`);
+                    }
+
+                    const appointmentsData = await appointmentsResponse.json();
+                    setAppointments(appointmentsData);
+
+                    // Cargar clientes
+                    const clientsResponse = await fetch(`${apiBaseUrl}api/clients`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!clientsResponse.ok) {
+                        throw new Error(`Error loading clients: ${clientsResponse.status}`);
+                    }
+
+                    const clientsData = await clientsResponse.json();
+                    setClients(clientsData.filter(client => client.business_id === businessToUse));
+                } else {
+                    setError("No business available");
                 }
-
-                const clientsData = await clientsResponse.json();
-                setClients(clientsData.filter(client => client.business_id === selectedBusiness.id));
             } catch (error) {
                 console.error("Error loading data:", error);
                 setError(error.message);
@@ -69,7 +95,7 @@ export const AppointmentsList = () => {
         };
 
         loadData();
-    }, [token, selectedBusiness, backendUrl]);
+    }, [token, backendUrl, filters.businessId]);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -77,18 +103,32 @@ export const AppointmentsList = () => {
             ...filters,
             [name]: value
         });
+
+        if (name === "businessId") {
+            setFilters(prev => ({
+                ...prev,
+                [name]: value,
+                clientId: ""
+            }));
+        } else {
+            setFilters(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
     };
 
     const resetFilters = () => {
         setFilters({
             clientId: "",
             date: "",
-            status: ""
+            status: "",
+            businessId: selectedBusiness ? selectedBusiness.id :
+                businesses.length > 0 ? businesses[0].id : ""
         });
     };
 
     const filteredAppointments = appointments.filter(appointment => {
-
         if (filters.clientId && appointment.client_id !== parseInt(filters.clientId)) {
             return false;
         }
@@ -201,7 +241,7 @@ export const AppointmentsList = () => {
     }
 
     return (
-        
+
         <div className="appointments-container">
             <div className="appointments-header">
                 <h2>Appointment Management</h2>
@@ -218,6 +258,22 @@ export const AppointmentsList = () => {
             )}
 
             <div className="appointments-filters">
+                <div className="filter-group">
+                    <label htmlFor="businessId">Business:</label>
+                    <select
+                        id="businessId"
+                        name="businessId"
+                        value={filters.businessId}
+                        onChange={handleFilterChange}
+                    >
+                        {businesses.map(business => (
+                            <option key={business.id} value={business.id}>
+                                {business.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 <div className="filter-group">
                     <label htmlFor="clientId">Client:</label>
                     <select
