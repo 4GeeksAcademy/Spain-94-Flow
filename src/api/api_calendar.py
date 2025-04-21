@@ -10,6 +10,7 @@ from .models import db, Appointments, Calendar, Users, Clients, Services, Busine
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import os
 from dotenv import load_dotenv
+import json
 
 load_dotenv()
 
@@ -26,22 +27,23 @@ class GoogleCalendarManager:
     def get_credentials(self):
         creds = None
 
-        credentials_path = os.getenv("CREDENTIALS_PATH")
-        token_path = os.getenv("TOKEN_PATH")
+        client_id = os.getenv("GOOGLE_CLIENT_ID")
+        client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+        refresh_token = os.getenv("GOOGLE_REFRESH_TOKEN")
+        token_path = os.getenv("TOKEN_PATH", "token.json")
 
-        print(f"Looking for credentials in: {credentials_path}")
-        print(f"Looking for token in: {token_path}")
+        print("Using credentials from environment variables")
 
-        if not os.path.exists(credentials_path):
-            print(
-                f"ERROR: The credentials file does not exist at {credentials_path}")
-            return None
-
-        if os.path.exists(token_path):
-            print(f"Token found at {token_path}")
-            creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-        else:
-            print(f"No token found at {token_path}")
+        if refresh_token:
+            print("Using refresh token from environment variables")
+            creds_data = {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "refresh_token": refresh_token,
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "scopes": SCOPES
+            }
+            creds = Credentials.from_authorized_user_info(creds_data)
 
         if not creds or not creds.valid:
             print("Invalid or non-existent credentials")
@@ -50,13 +52,26 @@ class GoogleCalendarManager:
                 try:
                     creds.refresh(Request())
                     print("Credentials refreshed successfully")
+
+                    if creds.refresh_token != refresh_token:
+                        print("New refresh token generated, update your .env file")
                 except Exception as e:
                     print(f"Error refreshing credentials: {e}")
             else:
                 print("Generating new credentials")
                 try:
-                    flow = InstalledAppFlow.from_client_secrets_file(
-                        credentials_path, SCOPES
+                    client_config = {
+                        "installed": {
+                            "client_id": client_id,
+                            "client_secret": client_secret,
+                            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                            "token_uri": "https://oauth2.googleapis.com/token",
+                            "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob"]
+                        }
+                    }
+
+                    flow = InstalledAppFlow.from_client_config(
+                        client_config, SCOPES
                     )
                     flow.redirect_uri = 'urn:ietf:wg:oauth:2.0:oob'
                     auth_url, _ = flow.authorization_url(prompt='consent')
@@ -67,14 +82,15 @@ class GoogleCalendarManager:
                     creds = flow.credentials
                     print("New credentials generated successfully")
 
-                except Exception as e:
+                    print(f"IMPORTANT: Add this refresh token to your .env file:")
+                    print(f"GOOGLE_REFRESH_TOKEN={creds.refresh_token}")
 
+                except Exception as e:
                     print(f"Error generating new credentials: {e}")
                     return None
 
-            os.makedirs(os.path.dirname(token_path), exist_ok=True)
-
             try:
+                os.makedirs(os.path.dirname(token_path), exist_ok=True)
                 with open(token_path, "w") as token:
                     token.write(creds.to_json())
                 print(f"Credentials saved at {token_path}")
@@ -189,7 +205,6 @@ class GoogleCalendarManager:
             return None
 
     def delete_event(self, event_id, calendar_id="primary"):
-
         if not self.service:
             return False
 
@@ -206,7 +221,6 @@ class GoogleCalendarManager:
 @calendar_api.route('/calendar/events', methods=['GET'])
 @jwt_required()
 def get_calendar_events():
-
     business_id = request.args.get('business_id')
 
     calendar_manager = GoogleCalendarManager()
@@ -241,7 +255,6 @@ def get_calendar_events():
 @calendar_api.route('/calendar/sync', methods=['POST'])
 @jwt_required()
 def sync_appointments_with_google():
-
     data = request.get_json(silent=True) or {}
     business_id = data.get('business_id')
 
@@ -422,7 +435,6 @@ def create_event_for_appointment(appointment_id):
 @calendar_api.route('/calendar/events/<int:appointment_id>', methods=['PUT'])
 @jwt_required()
 def update_appointment_event(appointment_id):
-
     appointment = Appointments.query.get(appointment_id)
 
     if not appointment:
@@ -503,7 +515,6 @@ def update_appointment_event(appointment_id):
 @calendar_api.route('/calendar/events/<int:appointment_id>', methods=['DELETE'])
 @jwt_required()
 def delete_appointment_event(appointment_id):
-
     calendar = Calendar.query.filter_by(appointment_id=appointment_id).first()
     if not calendar:
         return jsonify({"error": "This appointment does not have an associated event in Google Calendar"}), 404
@@ -544,7 +555,6 @@ else:
 @calendar_api.route('/calendar/events/google/<string:event_id>', methods=['DELETE'])
 @jwt_required()
 def delete_google_event_by_id(event_id):
-
     calendar_manager = GoogleCalendarManager()
 
     if not calendar_manager.service:
