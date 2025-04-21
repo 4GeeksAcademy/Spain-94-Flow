@@ -17,7 +17,7 @@ export const Login = () => {
 							<div className="welcome-icon">
 								<img src={logo} alt="Flow Logo" />
 							</div>
-							<h2>Wellcome to FLOW</h2>
+							<h2>Welcome to FLOW</h2>
 							<p>Professional business management system</p>
 							<div className="welcome-features">
 								<div className="feature-item">
