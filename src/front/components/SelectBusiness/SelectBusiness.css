@@ -1,4 +1,4 @@
-/* Variables para colores y sombras - consistentes con el resto de la aplicación */
+/* Variables para colores y sombras */
 :root {
   --primary-color: #2c3e50;
   --secondary-color: #3498db;
@@ -15,21 +15,28 @@
   min-height: 80vh;
   padding: 20px;
   margin: 0 auto;
-  justify-content: flex-start;
-  display:flex;
+  display: flex;
   flex-wrap: wrap;
   gap: 30px;
   width: 100%;
+  justify-content: flex-start;
+}
+
+.business-item {
+  width: calc(25% - 30px);
+  min-width: 200px;
+  flex-grow: 0;
+  flex-shrink: 0;
+  height: 120px;
 }
 
 .business-card-link {
-  width: calc(25% - 30px);
+  display: block;
   text-decoration: none;
   color: inherit;
   transition: transform 0.2s ease;
-  min-width: 200px;
-  flex-grow:0;
-  flex-shrink: 0;
+  height: 100%;
+  width: 100%;
 }
 
 .business-card-link:hover {
@@ -41,7 +48,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  height: 120px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -64,23 +71,25 @@
   color: #000000;
 }
 
-
 @media (max-width: 1200px) {
-  .business-card-link {
+  .business-item {
     width: calc(33.33% - 30px);
   }
 }
-@media (max-width:992px){
-  .business-card-link {
+
+@media (max-width: 992px) {
+  .business-item {
     width: calc(50% - 30px);
   }
 }
-@media (max-width:576px){
-  .business-card-link {
-    width:100%;
+
+@media (max-width: 576px) {
+  .business-item {
+    width: 100%;
     min-width: auto;
   }
-  .business-container{
-    gap:20px
+  
+  .business-container {
+    gap: 20px;
   }
 }

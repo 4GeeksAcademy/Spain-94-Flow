@@ -8,8 +8,6 @@ export const SelectBusiness = ({ searchTerm = "" }) => {
 	const navigate = useNavigate();
 	const { store, dispatch } = useGlobalReducer();
 
-
-
 	useEffect(() => {
 		{
 			const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
@@ -58,21 +56,20 @@ export const SelectBusiness = ({ searchTerm = "" }) => {
 	};
 
 	return (
-		
-		<div className="business-container ">
+		<div className="business-container">
 			{filteredBusinesses.map((business) => (
-				<Link
-					key={business.id}
-					to={`/calendar`}
-					className="business-card-link"
-					onClick={() => handleSelectBusiness(business)}
-				>
-					<div className="business-card">
-						<h5 className="business-name">{business.name}</h5>
-					</div>
-				</Link>
+				<div className="business-item" key={business.id}>
+					<Link
+						to={`/calendar`}
+						className="business-card-link"
+						onClick={() => handleSelectBusiness(business)}
+					>
+						<div className="business-card">
+							<h5 className="business-name">{business.name}</h5>
+						</div>
+					</Link>
+				</div>
 			))}
 		</div>
-
 	);
 };

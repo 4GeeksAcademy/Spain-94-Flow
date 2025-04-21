@@ -604,7 +604,7 @@ export const ClientDetail = () => {
 
                         {businessId && (
                             <div style={{ marginBottom: "15px", padding: "10px", backgroundColor: "#f8f9fa", borderRadius: "4px" }}>
-                                <strong>Selected business:</strong> ID: {businessId}
+                                <strong>Selected business:</strong> {selectedBusiness?.name || "Unknown business"}
                             </div>
                         )}
 
