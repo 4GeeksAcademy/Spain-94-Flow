@@ -1,5 +1,3 @@
-/* ListOfService.css */
-
 .all-services {
   width: 100%;
   display: flex;
@@ -92,17 +90,39 @@
 }
 
 .services-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 1.5rem;
+  justify-content: flex-start;
 }
 
 .service-card {
+  flex: 0 0 calc(33.333% - 1rem);
+  min-width: 280px;
+  max-width: 350px;
+  margin-bottom: 0.5rem;
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+  .service-card {
+    flex: 0 0 calc(50% - 0.75rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .services-grid {
+    justify-content: center;
+  }
+
+  .service-card {
+    flex: 0 0 100%;
+    max-width: 450px;
+  }
 }
 
 .service-card:hover {
@@ -541,7 +561,7 @@
     align-items: stretch;
   }
 
-  .services-actions .search-input {
+  .services-filters {
     max-width: 100%;
     margin-bottom: 1rem;
   }
@@ -549,10 +569,6 @@
   .add-service-button {
     width: 100%;
     justify-content: center;
-  }
-
-  .services-grid {
-    grid-template-columns: 1fr;
   }
 
   .form-row {
