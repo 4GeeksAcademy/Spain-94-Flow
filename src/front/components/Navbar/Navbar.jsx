@@ -18,12 +18,15 @@ export const Navbar = () => {
 	const [newUser, setNewUser] = useState({
 		username: "",
 		password: "",
-		business_tax_id: "",
+		confirmPassword: "",
+		business_name: "",
 		security_question: "",
 		security_answer: "",
 		role: "employee"
 	});
 	const [errorMessage, setErrorMessage] = useState("");
+	const [successMessage, setSuccessMessage] = useState(""); 
+	const [businesses, setBusinesses] = useState([]);
 
 	useEffect(() => {
 		const savedProblems = localStorage.getItem('problems');
@@ -35,6 +38,41 @@ export const Navbar = () => {
 	useEffect(() => {
 		localStorage.setItem('problems', JSON.stringify(problems));
 	}, [problems]);
+
+	useEffect(() => {
+		if (store.token) {
+			const fetchBusinesses = async () => {
+				try {
+					const response = await fetch(`${backendUrl}api/businesses`, {
+						headers: {
+							'Authorization': `Bearer ${store.token}`
+						}
+					});
+
+					if (response.ok) {
+						const data = await response.json();
+						setBusinesses(data);
+					}
+				} catch (error) {
+					console.error("Error fetching businesses:", error);
+				}
+			};
+
+			const newUserModal = document.getElementById('newUserModal');
+			if (newUserModal) {
+				newUserModal.addEventListener('show.bs.modal', () => {
+					fetchBusinesses();
+					// Clear messages when opening the modal
+					setErrorMessage("");
+					setSuccessMessage("");
+				});
+
+				return () => {
+					newUserModal.removeEventListener('show.bs.modal', fetchBusinesses);
+				};
+			}
+		}
+	}, [store.token, backendUrl]);
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
@@ -69,15 +107,37 @@ export const Navbar = () => {
 	const handleNewUserSubmit = async (e) => {
 		e.preventDefault();
 		setErrorMessage("");
+		setSuccessMessage("");
+
+		if (newUser.password !== newUser.confirmPassword) {
+			setErrorMessage("Passwords do not match");
+			return;
+		}
 
 		try {
+			const selectedBusiness = businesses.find(business => business.name === newUser.business_name);
+
+			if (!selectedBusiness) {
+				setErrorMessage("Business not found. Please select a valid business.");
+				return;
+			}
+
+			const userData = {
+				username: newUser.username,
+				password: newUser.password,
+				business_tax_id: selectedBusiness.tax_id,
+				security_question: newUser.security_question,
+				security_answer: newUser.security_answer,
+				role: newUser.role
+			};
+
 			const response = await fetch(`${backendUrl}api/users`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					'Authorization': `Bearer ${store.token}`
 				},
-				body: JSON.stringify(newUser)
+				body: JSON.stringify(userData)
 			});
 
 			const data = await response.json();
@@ -89,17 +149,23 @@ export const Navbar = () => {
 
 			console.log("User created:", data);
 
-			setNewUser({
-				username: "",
-				password: "",
-				business_tax_id: "",
-				security_question: "",
-				security_answer: "",
-				role: "employee"
-			});
+			setSuccessMessage(`User ${newUser.username} created successfully!`);
 
-			document.getElementById('closeNewUserModal').click();
+			setTimeout(() => {
+				setNewUser({
+					username: "",
+					password: "",
+					confirmPassword: "",
+					business_name: "",
+					security_question: "",
+					security_answer: "",
+					role: "employee"
+				});
 
+				setTimeout(() => {
+					document.getElementById('closeNewUserModal').click();
+				}, 1500);
+			}, 500);
 
 		} catch (error) {
 			console.error("Error:", error);
@@ -232,6 +298,13 @@ export const Navbar = () => {
 								<button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closeNewUserModal"></button>
 							</div>
 							<div className="modal-body">
+								{successMessage && (
+									<div className="alert alert-success mb-3" role="alert">
+										<i className="bi bi-check-circle-fill me-2"></i>
+										{successMessage}
+									</div>
+								)}
+
 								<form onSubmit={handleNewUserSubmit}>
 									<div className="form-group mb-3">
 										<label htmlFor="username" className="form-label">Username</label>
@@ -262,17 +335,49 @@ export const Navbar = () => {
 									</div>
 
 									<div className="form-group mb-3">
-										<label htmlFor="business_tax_id" className="form-label">Business Tax ID</label>
+										<label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
 										<input
-											type="text"
-											id="business_tax_id"
-											name="business_tax_id"
+											type="password"
+											id="confirmPassword"
+											name="confirmPassword"
 											className="form-control"
-											placeholder="Business Tax ID"
-											value={newUser.business_tax_id}
+											placeholder="Confirm your password"
+											value={newUser.confirmPassword}
 											onChange={handleNewUserChange}
 											required
 										/>
+									</div>
+
+									<div className="form-group mb-3">
+										<label htmlFor="business_name" className="form-label">Business Name</label>
+										{businesses.length > 0 ? (
+											<select
+												id="business_name"
+												name="business_name"
+												className="form-select"
+												value={newUser.business_name}
+												onChange={handleNewUserChange}
+												required
+											>
+												<option value="">Select a business</option>
+												{businesses.map(business => (
+													<option key={business.id} value={business.name}>
+														{business.name}
+													</option>
+												))}
+											</select>
+										) : (
+											<input
+												type="text"
+												id="business_name"
+												name="business_name"
+												className="form-control"
+												placeholder="Business name"
+												value={newUser.business_name}
+												onChange={handleNewUserChange}
+												required
+											/>
+										)}
 									</div>
 
 									<div className="form-group mb-3">
@@ -321,6 +426,7 @@ export const Navbar = () => {
 
 									{errorMessage && (
 										<div className="alert alert-danger" role="alert">
+											<i className="bi bi-exclamation-triangle-fill me-2"></i>
 											{errorMessage}
 										</div>
 									)}
@@ -383,7 +489,7 @@ export const Navbar = () => {
 					</div>
 				</div>
 			</div>
-			<AddBusinessModal/>
+			<AddBusinessModal />
 		</>
 	);
 };

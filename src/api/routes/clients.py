@@ -23,6 +23,20 @@ def get_client(client_id):
         return jsonify({"error": "client not found"}), 404
     return jsonify(client.serialize_client()), 200
 
+@clients_routes.route('/business/<int:business_id>/clients', methods=['GET'])
+@jwt_required()
+def get_business_clients(business_id):
+    
+    business = Businesses.query.get(business_id)
+    if not business:
+        return jsonify({"error": f"Business with ID {business_id} not found"}), 404
+        
+    clients = Clients.query.filter_by(business_id=business_id).all()
+    
+    serialized_clients = [client.serialize_client() for client in clients]
+    
+    return jsonify(serialized_clients), 200
+
 
 @clients_routes.route('/clients', methods=['POST'])
 @jwt_required()

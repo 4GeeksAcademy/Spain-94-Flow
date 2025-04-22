@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required
 
 users_routes = Blueprint('users_routes', __name__)
 
+
 @users_routes.route('/admins', methods=['GET'])
 @jwt_required()
 def get_admins():
@@ -11,12 +12,14 @@ def get_admins():
     serialized_admins = [admin.serialize_admins() for admin in admins]
     return jsonify(serialized_admins)
 
+
 @users_routes.route('/users', methods=['GET'])
 @jwt_required()
 def get_users():
     users = Users.query.all()
     serialized_users = [user.serialize_user() for user in users]
     return jsonify(serialized_users), 200
+
 
 @users_routes.route('/users/<int:user_id>', methods=['GET'])
 @jwt_required()
@@ -26,12 +29,22 @@ def get_user(user_id):
         return jsonify({"error": "user not found"}), 404
     return jsonify(user.serialize_user()), 200
 
+
 @users_routes.route('/users', methods=['POST'])
 @jwt_required()
 def add_user():
     data = request.get_json()
     if not data:
         return jsonify({"error": "data not found"}), 404
+
+    if "business_name" in data and "business_tax_id" not in data:
+
+        business = Businesses.query.filter_by(
+            business_name=data["business_name"]).first()
+        if not business:
+            return jsonify({"error": f"The business '{data['business_name']}' does not exist"}), 400
+
+        data["business_tax_id"] = business.business_tax_id
 
     required_fields = [
         "username",
@@ -51,7 +64,8 @@ def add_user():
     if existing_user:
         return jsonify({"error": "the user already exists"}), 400
 
-    business = Businesses.query.filter_by(business_tax_id=data["business_tax_id"]).first()
+    business = Businesses.query.filter_by(
+        business_tax_id=data["business_tax_id"]).first()
     if not business:
         return jsonify({"error": "the business with that tax ID does not exist"}), 400
 
@@ -85,6 +99,21 @@ def add_user():
             "error": str(e)
         }), 500
 
+@users_routes.route('/businesses', methods=['GET'])
+@jwt_required()
+def get_businesses_for_dropdown():
+    businesses = Businesses.query.all()
+    serialized_businesses = [
+        {
+            "id": business.id,
+            "name": business.business_name,
+            "tax_id": business.business_tax_id
+        }
+        for business in businesses
+    ]
+    return jsonify(serialized_businesses), 200
+
+
 @users_routes.route('/users', methods=['PUT'])
 @jwt_required()
 def update_user():
@@ -92,6 +121,15 @@ def update_user():
 
     if not data:
         return jsonify({"error": "data not found"}), 400
+
+    if "business_name" in data and "business_tax_id" not in data:
+
+        business = Businesses.query.filter_by(
+            business_name=data["business_name"]).first()
+        if not business:
+            return jsonify({"error": f"The business '{data['business_name']}' does not exist"}), 400
+
+        data["business_tax_id"] = business.business_tax_id
 
     required_fields = ["username", "password", "business_tax_id", "role"]
 
@@ -129,6 +167,7 @@ def update_user():
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+
 @users_routes.route('/users/<string:username>', methods=['DELETE'])
 @jwt_required()
 def delete_user(username):
@@ -149,16 +188,17 @@ def delete_user(username):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-    
+
+
 @users_routes.route('/business/<int:business_id>/users', methods=['GET'])
 @jwt_required()
 def get_business_users(business_id):
     business = Businesses.query.get(business_id)
     if not business:
         return jsonify({"error": f"Business with ID {business_id} not found"}), 404
-        
+
     business_tax_id = business.business_tax_id
     users = Users.query.filter_by(business_tax_id=business_tax_id).all()
-    
+
     serialized_users = [user.serialize_user() for user in users]
     return jsonify(serialized_users), 200

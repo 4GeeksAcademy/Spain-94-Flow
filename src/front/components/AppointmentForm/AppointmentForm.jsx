@@ -5,13 +5,14 @@ import "./AppointmentForm.css";
 
 export const AppointmentForm = ({ clientId = null }) => {
     const navigate = useNavigate();
-    const { store } = useGlobalReducer();
+    const { store, dispatch } = useGlobalReducer();
     const { token, selectedBusiness, user } = store;
     const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 
     const [clients, setClients] = useState([]);
     const [services, setServices] = useState([]);
     const [users, setUsers] = useState([]);
+    const [businesses, setBusinesses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
@@ -28,23 +29,66 @@ export const AppointmentForm = ({ clientId = null }) => {
     const [formErrors, setFormErrors] = useState({});
 
     useEffect(() => {
-        if (!token || !selectedBusiness) {
-            setError("Login and business selection required");
+        if (!token) {
+            setError("Login required");
             setLoading(false);
             return;
         }
 
-        const loadInitialData = async () => {
-
+        const fetchBusinesses = async () => {
             try {
-                const clientsResponse = await fetch(`${backendUrl}api/clients`, {
+                const response = await fetch(`${backendUrl}api/businesses`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error("Error loading businesses");
+                }
+
+                const data = await response.json();
+                setBusinesses(data);
+
+                if (!selectedBusiness && data.length > 0) {
+                    // Select the first business as default
+                    setFormData(prev => ({
+                        ...prev,
+                        businessId: data[0].id.toString()
+                    }));
+                }
+
+            } catch (error) {
+                console.error("Error fetching businesses:", error);
+                setError("Failed to load businesses. Please try again.");
+            }
+        };
+
+        fetchBusinesses();
+    }, [token, backendUrl, selectedBusiness]);
+
+    useEffect(() => {
+        if (!token) {
+            return;
+        }
+
+        if (!formData.businessId) {
+            setLoading(false);
+            return;
+        }
+
+        const loadBusinessData = async () => {
+            setLoading(true);
+            try {
+
+                const clientsResponse = await fetch(`${backendUrl}api/business/${formData.businessId}/clients`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
                 if (!clientsResponse.ok) {
-                    throw new Error("Error loading clients");
+                    throw new Error("Error loading clients for this business");
                 }
 
                 const clientsData = await clientsResponse.json();
@@ -60,7 +104,7 @@ export const AppointmentForm = ({ clientId = null }) => {
                     }
                 }
 
-                const servicesResponse = await fetch(`${backendUrl}api/business/${selectedBusiness.id}/services`, {
+                const servicesResponse = await fetch(`${backendUrl}api/business/${formData.businessId}/services`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -73,7 +117,7 @@ export const AppointmentForm = ({ clientId = null }) => {
                 const servicesData = await servicesResponse.json();
                 setServices(servicesData);
 
-                const usersResponse = await fetch(`${backendUrl}api/business/${selectedBusiness.id}/users`, {
+                const usersResponse = await fetch(`${backendUrl}api/business/${formData.businessId}/users`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -88,22 +132,32 @@ export const AppointmentForm = ({ clientId = null }) => {
 
                 setLoading(false);
             } catch (error) {
-                console.error("Error loading initial data:", error);
+                console.error("Error loading business data:", error);
                 setError(error.message);
                 setLoading(false);
             }
         };
 
-        loadInitialData();
-    }, [token, selectedBusiness, clientId]);
+        loadBusinessData();
+    }, [token, formData.businessId, clientId, backendUrl]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
 
-        setFormData({
-            ...formData,
-            [name]: value
-        });
+        if (name === "businessId") {
+            setFormData({
+                ...formData,
+                [name]: value,
+                clientEmail: "", 
+                serviceName: "", 
+                username: ""     
+            });
+        } else {
+            setFormData({
+                ...formData,
+                [name]: value
+            });
+        }
 
         if (formErrors[name]) {
             setFormErrors({
@@ -115,6 +169,10 @@ export const AppointmentForm = ({ clientId = null }) => {
 
     const validateForm = () => {
         const errors = {};
+
+        if (!formData.businessId) {
+            errors.businessId = "You must select a business";
+        }
 
         if (!formData.clientEmail) {
             errors.clientEmail = "You must select a client";
@@ -161,7 +219,7 @@ export const AppointmentForm = ({ clientId = null }) => {
                 service_name: formData.serviceName,
                 username: formData.username,
                 date_time: dateTime,
-                business_id: selectedBusiness.id
+                business_id: parseInt(formData.businessId)
             };
 
             console.log("Sending appointment data:", appointmentData);
@@ -184,18 +242,28 @@ export const AppointmentForm = ({ clientId = null }) => {
             console.log("response:", data);
             setSuccess(true);
 
+            if (formData.businessId !== selectedBusiness?.id) {
+                const business = businesses.find(b => b.id.toString() === formData.businessId);
+                if (business) {
+                    dispatch({
+                        type: "selectBusiness",
+                        payload: business
+                    });
+                }
+            }
+
             setFormData({
                 clientEmail: "",
                 serviceName: "",
-                username: user?.username || "",
+                username: "",
                 date: "",
                 time: "09:00",
-                businessId: selectedBusiness?.id || ""
+                businessId: formData.businessId 
             });
 
             setTimeout(() => {
                 navigate('/calendar');
-            }, 1000);
+            }, 1500);
 
         } catch (error) {
             console.error("Error creating the appointment:", error);
@@ -205,7 +273,7 @@ export const AppointmentForm = ({ clientId = null }) => {
         }
     };
 
-    if (loading && !error) {
+    if (loading && !error && businesses.length === 0) {
         return (
             <div className="appointment-form-container">
                 <div className="loading-spinner">Loading...</div>
@@ -226,7 +294,6 @@ export const AppointmentForm = ({ clientId = null }) => {
     }
 
     return (
-
         <div className="all-appointment-form">
             <div className="container">
                 <div className="appointment-form-container">
@@ -246,13 +313,33 @@ export const AppointmentForm = ({ clientId = null }) => {
 
                     <form onSubmit={handleSubmit} className="appointment-form">
                         <div className="form-group">
+                            <label htmlFor="businessId">Business:</label>
+                            <select
+                                id="businessId"
+                                name="businessId"
+                                value={formData.businessId}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className={formErrors.businessId ? "error" : ""}
+                            >
+                                <option value="">Select a business</option>
+                                {businesses.map(business => (
+                                    <option key={business.id} value={business.id.toString()}>
+                                        {business.name}
+                                    </option>
+                                ))}
+                            </select>
+                            {formErrors.businessId && <div className="error-text">{formErrors.businessId}</div>}
+                        </div>
+
+                        <div className="form-group">
                             <label htmlFor="clientEmail">Client:</label>
                             <select
                                 id="clientEmail"
                                 name="clientEmail"
                                 value={formData.clientEmail}
                                 onChange={handleChange}
-                                disabled={loading || clientId}
+                                disabled={loading || clientId || !formData.businessId}
                                 className={formErrors.clientEmail ? "error" : ""}
                             >
                                 <option value="">Select a client</option>
@@ -272,7 +359,7 @@ export const AppointmentForm = ({ clientId = null }) => {
                                 name="serviceName"
                                 value={formData.serviceName}
                                 onChange={handleChange}
-                                disabled={loading}
+                                disabled={loading || !formData.businessId}
                                 className={formErrors.serviceName ? "error" : ""}
                             >
                                 <option value="">Select a service</option>
@@ -292,7 +379,7 @@ export const AppointmentForm = ({ clientId = null }) => {
                                 name="username"
                                 value={formData.username}
                                 onChange={handleChange}
-                                disabled={loading}
+                                disabled={loading || !formData.businessId}
                                 className={formErrors.username ? "error" : ""}
                             >
                                 <option value="">Select a professional</option>
@@ -314,7 +401,7 @@ export const AppointmentForm = ({ clientId = null }) => {
                                     name="date"
                                     value={formData.date}
                                     onChange={handleChange}
-                                    disabled={loading}
+                                    disabled={loading || !formData.businessId}
                                     min={new Date().toISOString().split('T')[0]}
                                     className={formErrors.date ? "error" : ""}
                                 />
@@ -328,7 +415,7 @@ export const AppointmentForm = ({ clientId = null }) => {
                                     name="time"
                                     value={formData.time}
                                     onChange={handleChange}
-                                    disabled={loading}
+                                    disabled={loading || !formData.businessId}
                                     className={formErrors.time ? "error" : ""}
                                 >
                                     <option value="09:00">09:00</option>
@@ -357,7 +444,7 @@ export const AppointmentForm = ({ clientId = null }) => {
                             <button
                                 type="submit"
                                 className="submit-button"
-                                disabled={loading}
+                                disabled={loading || !formData.businessId}
                             >
                                 {loading ? 'Creating...' : 'Create Appointment'}
                             </button>
