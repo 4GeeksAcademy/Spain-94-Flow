@@ -1,27 +1,35 @@
 from flask import Blueprint, request, jsonify
 from ..models import db, Businesses
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 businesses_routes = Blueprint('businesses_routes', __name__)
+
 
 @businesses_routes.route('/businesses', methods=['GET'])
 @jwt_required()
 def get_businesses():
     businesses = Businesses.query.all()
-    serialized_business = [business.serialize_business() for business in businesses]
+    serialized_business = [business.serialize_business()
+                           for business in businesses]
     return jsonify(serialized_business), 200
+
 
 @businesses_routes.route('/businesses/<string:business_tax_id>', methods=['GET'])
 @jwt_required()
 def get_business(business_tax_id):
-    business = Businesses.query.filter_by(business_tax_id=business_tax_id).first()
+    business = Businesses.query.filter_by(
+        business_tax_id=business_tax_id).first()
     if not business:
         return jsonify({"error": "business not found"}), 404
     return jsonify(business.serialize_business()), 200
 
+
 @businesses_routes.route('/businesses', methods=['POST'])
 @jwt_required()
 def add_business():
+    current_user = get_jwt_identity()
+    print(f"Current user identity: {current_user}")
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "data not found"}), 404
@@ -63,6 +71,7 @@ def add_business():
             "error": str(e)
         }), 500
 
+
 @businesses_routes.route('/businesses/<int:business_id>', methods=['PUT'])
 @jwt_required()
 def update_business(business_id):
@@ -93,6 +102,7 @@ def update_business(business_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+
 @businesses_routes.route('/businesses/<int:business_id>', methods=['DELETE'])
 @jwt_required()
 def delete_business(business_id):
@@ -113,4 +123,3 @@ def delete_business(business_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-    
