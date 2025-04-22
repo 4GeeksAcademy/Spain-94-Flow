@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import "./AddBusinessModal.css"; // Importing our custom CSS
+import "./AddBusinessModal.css";
 
 export const AddBusinessModal = () => {
 	const { store } = useGlobalReducer();
 	const [newBusiness, setNewBusiness] = useState({
-		name: "",
-		tax_id: "",
-		postal_code: ""
+		business_name: "",
+		business_tax_id: "",
+		business_postal_code: ""
 	});
 	const [businessErrorMessage, setBusinessErrorMessage] = useState("");
 	const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
@@ -44,9 +44,9 @@ export const AddBusinessModal = () => {
 			console.log("Business created:", data);
 
 			setNewBusiness({
-				name: "",
-				tax_id: "",
-				postal_code: ""
+				business_name: "",
+				business_tax_id: "",
+				business_postal_code: ""
 			});
 
 			document.getElementById('closeNewBusinessModal').click();
@@ -74,10 +74,10 @@ export const AddBusinessModal = () => {
 								<input
 									type="text"
 									id="business_name"
-									name="name"
+									name="business_name"
 									className="form-control"
 									placeholder="Business's name"
-									value={newBusiness.name}
+									value={newBusiness.business_name}
 									onChange={handleNewBusinessChange}
 									required
 								/>
@@ -88,10 +88,10 @@ export const AddBusinessModal = () => {
 								<input
 									type="text"
 									id="business_tax_id"
-									name="tax_id"
+									name="business_tax_id"
 									className="form-control"
 									placeholder="Tax ID"
-									value={newBusiness.tax_id}
+									value={newBusiness.business_tax_id}
 									onChange={handleNewBusinessChange}
 									required
 								/>
@@ -102,10 +102,10 @@ export const AddBusinessModal = () => {
 								<input
 									type="text"
 									id="business_postal_code"
-									name="postal_code"
+									name="business_postal_code"
 									className="form-control"
 									placeholder="Postal Code"
-									value={newBusiness.postal_code}
+									value={newBusiness.business_postal_code}
 									onChange={handleNewBusinessChange}
 									required
 								/>
