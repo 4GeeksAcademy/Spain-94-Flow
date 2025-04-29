@@ -9,7 +9,6 @@ verify_ssl = true
 flask = "*"
 flask-sqlalchemy = "*"
 flask-swagger = "*"
-psycopg2-binary = "*"
 python-dotenv = "*"
 flask-cors = "*"
 gunicorn = "*"
@@ -26,6 +25,8 @@ google-auth = "*"
 google-api-python-client = "*"
 flask-migrate = "*"
 alembic = "*"
+psycopg2-binary = "*"
+colorama = "*"
 
 [requires]
 python_version = "3.13"

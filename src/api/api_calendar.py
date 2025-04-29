@@ -545,9 +545,9 @@ def delete_appointment_event(appointment_id):
 print("Initializing GoogleCalendarManager...")
 calendar = GoogleCalendarManager()
 if calendar.service:
-    print("✅ Google Calendar service initialized correctly")
+    print(" Google Calendar service initialized correctly")
 else:
-    print("❌ Error initializing Google Calendar service")
+    print(" Error initializing Google Calendar service")
 
 
 # -------------------------------------------------- Para eventos puntuales sin citas ----------------

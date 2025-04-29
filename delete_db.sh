@@ -17,16 +17,16 @@ echo ""
 echo "=== ELIMINANDO LA BASE DE DATOS ==="
 
 # Terminar conexiones a la base de datos - separado del DROP DATABASE
-PGPASSWORD=postgres psql -h localhost -U gitpod -d postgres -c "
+PGPASSWORD=angeld1402 psql -h localhost -U postgres -d flow -c "
 SELECT pg_terminate_backend(pid) 
 FROM pg_stat_activity 
 WHERE datname = 'example' AND pid <> pg_backend_pid();"
 
 # Ejecutar DROP DATABASE sin usar transacciones
-PGPASSWORD=postgres psql -h localhost -U gitpod -d postgres --command="DROP DATABASE IF EXISTS example;" || { echo "Error al eliminar la base de datos"; }
+PGPASSWORD=angeld1402 psql -h localhost -U postgres -d flow --command="DROP DATABASE IF EXISTS example;" || { echo "Error al eliminar la base de datos"; }
 
 # Crear la base de datos de nuevo
-PGPASSWORD=postgres psql -h localhost -U gitpod -d postgres --command="CREATE DATABASE example;" || { echo "Error al crear la base de datos"; exit 1; }
+PGPASSWORD=angeld1402 psql -h localhost -U postgres -d flow --command="CREATE DATABASE example;" || { echo "Error al crear la base de datos"; exit 1; }
 
 echo "✅ Base de datos eliminada y recreada"
 
